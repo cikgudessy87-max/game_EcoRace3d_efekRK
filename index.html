@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EcoRace 3D: Efek Rumah Kaca | Created by Cikgu Dessy</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js for Cheerful 3D Racing Track -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Google Fonts: Fredoka (Cheerful Display) & Nunito (Clean Readability) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom Game Typography & Cheerful Styling */
+        :root {
+            --font-display: 'Fredoka', sans-serif;
+            --font-body: 'Nunito', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(180deg, #38bdf8 0%, #bae6fd 100%);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1, h2, h3, .font-display {
+            font-family: var(--font-display);
+        }
+
+        /* 3D Canvas Container */
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Layer over 3D Canvas */
+        #ui-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .pointer-auto {
+            pointer-events: auto;
+        }
+
+        /* Bubbly 3D Game Buttons */
+        .btn-3d {
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
+            position: relative;
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25) !important;
+        }
+        .btn-3d:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn-green {
+            background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+            box-shadow: 0 6px 0 #047857, 0 10px 20px rgba(16, 185, 129, 0.35);
+            border: 2px solid #a7f3d0;
+        }
+        .btn-blue {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            box-shadow: 0 6px 0 #0369a1, 0 10px 20px rgba(2, 132, 199, 0.35);
+            border: 2px solid #bae6fd;
+        }
+        .btn-amber {
+            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+            box-shadow: 0 6px 0 #b45309, 0 10px 20px rgba(245, 158, 11, 0.35);
+            border: 2px solid #fde68a;
+        }
+        .btn-rose {
+            background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+            box-shadow: 0 6px 0 #9f1239, 0 10px 20px rgba(225, 29, 72, 0.35);
+            border: 2px solid #fecdd3;
+        }
+        .btn-purple {
+            background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 100%);
+            box-shadow: 0 6px 0 #5b21b6, 0 10px 20px rgba(124, 58, 237, 0.35);
+            border: 2px solid #ddd6fe;
+        }
+
+        /* Glassmorphism Game Cards */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 3px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
+        }
+
+        /* Animations */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatSlow 3s ease-in-out infinite;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.85) translateY(15px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes pulseFast {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .animate-pulse-fast {
+            animation: pulseFast 0.8s ease-in-out infinite;
+        }
+
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar for Modals on Small Screens */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Three.js Canvas Container -->
+    <div id="canvas-container" title="Geser layar untuk memutar kamera 3D"></div>
+
+    <!-- Confetti Celebration Layer -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Main UI Overlay -->
+    <div id="ui-layer">
+
+        <!-- ==================== TOP HUD BAR ==================== -->
+        <header id="top-hud" class="w-full px-3 sm:px-6 pt-3 flex items-start justify-between gap-2 hidden">
+            <!-- Left: Brand & Home Button -->
+            <div class="flex items-center gap-2 pointer-auto">
+                <button id="btn-home-confirm" class="btn-3d bg-white hover:bg-slate-50 text-slate-700 font-bold p-2.5 sm:px-3.5 sm:py-2 rounded-2xl shadow-md border-2 border-slate-200 flex items-center gap-1.5 text-sm" title="Kembali ke Menu">
+                    <span class="text-lg">🏠</span>
+                    <span class="hidden sm:inline font-display">Menu</span>
+                </button>
+                <div class="hidden md:flex flex-col bg-white/85 backdrop-blur px-3.5 py-1.5 rounded-2xl border-2 border-white shadow-sm">
+                    <span class="text-xs font-extrabold text-emerald-700 tracking-wide uppercase">EcoRace 3D</span>
+                    <span class="text-[11px] font-bold text-slate-500">Created by Cikgu Dessy</span>
+                </div>
+            </div>
+
+            <!-- Center: Live Scoreboard Pills -->
+            <div id="hud-scoreboard" class="flex flex-wrap justify-center gap-1.5 sm:gap-2.5 max-w-2xl pointer-auto">
+                <!-- Dynamically populated player/team score pills -->
+            </div>
+
+            <!-- Right: Question Counter & Sound Toggle -->
+            <div class="flex items-center gap-2 pointer-auto">
+                <div class="bg-white/90 backdrop-blur px-3 py-2 rounded-2xl border-2 border-white shadow-md text-center">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase leading-none">Soal</div>
+                    <div id="hud-progress" class="font-display font-bold text-emerald-600 text-sm sm:text-base leading-tight">1/10</div>
+                </div>
+                <button id="btn-sound-hud" class="btn-3d bg-white hover:bg-slate-50 text-slate-700 p-2.5 rounded-2xl shadow-md border-2 border-slate-200 text-lg" title="Suara On/Off">
+                    🔊
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== COUNTDOWN OVERLAY ==================== -->
+        <div id="countdown-overlay" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/35 backdrop-blur-[2px] hidden">
+            <div id="countdown-text" class="font-display font-bold text-8xl sm:text-9xl text-white drop-shadow-[0_10px_10px_rgba(0,0,0,0.4)] animate-pop">
+                3
+            </div>
+        </div>
+
+        <!-- ==================== LOBBY / START SCREEN ==================== -->
+        <main id="lobby-screen" class="fixed inset-0 z-20 flex items-center justify-center p-3 sm:p-6 overflow-y-auto pointer-auto">
+            <div class="glass-panel rounded-3xl w-full max-w-2xl p-5 sm:p-7 animate-pop my-auto max-h-[94vh] overflow-y-auto custom-scroll">
+                
+                <!-- Header & Branding -->
+                <div class="flex items-center justify-between mb-3">
+                    <span class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs sm:text-sm font-extrabold px-3 py-1 rounded-full border border-emerald-300">
+                        🌍 Topik: Efek Rumah Kaca
+                    </span>
+                    <button id="btn-sound-lobby" class="btn-3d bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-sm font-bold border border-slate-300 flex items-center gap-1">
+                        <span id="sound-icon-lobby">🔊</span> <span class="hidden sm:inline">Suara</span>
+                    </button>
+                </div>
+
+                <div class="text-center mb-5">
+                    <h1 class="font-display text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-sky-600 drop-shadow-sm leading-tight">
+                        🏎️ EcoRace 3D
+                    </h1>
+                    <p class="text-slate-600 font-bold text-sm sm:text-base mt-1">
+                        Balapan Cerdas Selamatkan Bumi dari Efek Rumah Kaca!
+                    </p>
+                    <div class="mt-2 inline-block bg-gradient-to-r from-amber-100 to-yellow-100 border border-amber-300 text-amber-800 text-xs sm:text-sm font-extrabold px-4 py-1 rounded-full shadow-sm">
+                        ✨ Created by Cikgu Dessy ✨
+                    </div>
+                </div>
+
+                <!-- Mode Selector Tabs -->
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <button id="tab-individu" class="btn-3d btn-green text-white rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3">
+                        <span class="text-3xl sm:text-4xl">👤</span>
+                        <div>
+                            <div class="font-display font-bold text-base sm:text-lg leading-tight">Mode Individu</div>
+                            <div class="text-xs text-emerald-50 font-semibold">Balapan vs Eco-Bot</div>
+                        </div>
+                    </button>
+                    <button id="tab-kelompok" class="btn-3d bg-slate-100 hover:bg-slate-200 text-slate-700 border-2 border-slate-300 shadow-[0_5px_0_#cbd5e1] rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3">
+                        <span class="text-3xl sm:text-4xl">👥</span>
+                        <div>
+                            <div class="font-display font-bold text-base sm:text-lg leading-tight">Mode Kelompok</div>
+                            <div class="text-xs text-slate-500 font-semibold">2 - 4 Tim Bergiliran</div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Configuration: Mode Individu -->
+                <div id="config-individu" class="bg-emerald-50/80 border-2 border-emerald-200 rounded-2xl p-4 mb-5 space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-extrabold text-emerald-800 uppercase mb-1">Nama Pembalap</label>
+                            <input id="input-player-name" type="text" value="Pembalap Hijau" maxlength="16" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-500 focus:outline-none font-bold text-slate-700 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-emerald-800 uppercase mb-1">Jumlah Soal</label>
+                            <select id="select-solo-questions" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-emerald-300 focus:border-emerald-500 focus:outline-none font-bold text-slate-700 bg-white">
+                                <option value="8">8 Soal (Cepat)</option>
+                                <option value="10" selected>10 Soal (Standar)</option>
+                                <option value="15">15 Soal (Tantangan)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-emerald-800 uppercase mb-1.5">Pilih Warna Mobilmu</label>
+                        <div class="flex flex-wrap gap-2" id="solo-color-picker">
+                            <button type="button" data-color="0" class="color-choice ring-4 ring-emerald-500 bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow">🌿 Hijau Eco</button>
+                            <button type="button" data-color="1" class="color-choice bg-sky-500 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow opacity-80 hover:opacity-100">💧 Biru Langit</button>
+                            <button type="button" data-color="2" class="color-choice bg-amber-400 text-slate-900 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow opacity-80 hover:opacity-100">☀️ Kuning Surya</button>
+                            <button type="button" data-color="3" class="color-choice bg-rose-500 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow opacity-80 hover:opacity-100">🌺 Merah Ceria</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration: Mode Kelompok -->
+                <div id="config-kelompok" class="bg-sky-50/80 border-2 border-sky-200 rounded-2xl p-4 mb-5 space-y-4 hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-extrabold text-sky-800 uppercase mb-1">Jumlah Kelompok</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button type="button" data-teams="2" class="team-count-btn bg-sky-500 text-white font-bold py-2 rounded-xl shadow text-sm">2 Tim</button>
+                                <button type="button" data-teams="3" class="team-count-btn bg-white text-sky-700 border-2 border-sky-200 font-bold py-2 rounded-xl text-sm">3 Tim</button>
+                                <button type="button" data-teams="4" class="team-count-btn bg-white text-sky-700 border-2 border-sky-200 font-bold py-2 rounded-xl text-sm">4 Tim</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-extrabold text-sky-800 uppercase mb-1">Soal per Kelompok</label>
+                            <select id="select-group-qpt" class="w-full px-3.5 py-2 rounded-xl border-2 border-sky-300 focus:border-sky-500 focus:outline-none font-bold text-slate-700 bg-white">
+                                <option value="3" selected>3 Soal / Tim</option>
+                                <option value="4">4 Soal / Tim</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-sky-800 uppercase mb-1.5">Nama Kelompok</label>
+                        <div id="team-names-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <!-- Dynamically generated team inputs -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button id="btn-start-game" class="btn-3d btn-amber w-full text-slate-900 font-display font-bold text-xl sm:text-2xl py-3.5 sm:py-4 rounded-2xl flex items-center justify-center gap-2">
+                    <span>🏁 MULAI BALAPAN!</span>
+                </button>
+
+                <p class="text-center text-xs text-slate-400 font-semibold mt-3">
+                    💡 Tips: Kamu bisa menggeser layar 3D di belakang untuk melihat mobil dan lintasan dari berbagai sudut!
+                </p>
+            </div>
+        </main>
+
+        <!-- ==================== IN-GAME QUIZ PANEL (BOTTOM) ==================== -->
+        <section id="quiz-panel" class="w-full px-3 sm:px-6 pb-3 sm:pb-5 flex justify-center hidden">
+            <div class="glass-panel rounded-3xl w-full max-w-3xl p-4 sm:p-5 pointer-auto animate-pop">
+                
+                <!-- Turn Banner & Timer Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <div id="turn-badge" class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full font-display font-bold text-sm sm:text-base text-white bg-emerald-500 shadow-sm">
+                        <span>🏎️</span>
+                        <span id="turn-label">Giliran: Pembalap Hijau</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-extrabold text-slate-500 uppercase">Waktu:</span>
+                        <span id="timer-text" class="font-display font-bold text-base sm:text-lg text-amber-600 w-8 text-right">20s</span>
+                    </div>
+                </div>
+
+                <!-- Progress Timer Bar -->
+                <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden mb-3.5">
+                    <div id="timer-bar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-100 rounded-full" style="width: 100%;"></div>
+                </div>
+
+                <!-- Question Text -->
+                <h2 id="question-text" class="font-display font-bold text-slate-800 text-base sm:text-xl leading-snug mb-3.5">
+                    Memuat pertanyaan tentang Efek Rumah Kaca...
+                </h2>
+
+                <!-- 4 Answer Buttons -->
+                <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    <!-- Dynamically populated options A, B, C, D -->
+                </div>
+
+                <!-- Feedback & Educational Explanation Box -->
+                <div id="feedback-box" class="mt-3.5 p-3.5 rounded-2xl border-2 hidden animate-pop">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex-1">
+                            <div id="feedback-title" class="font-display font-bold text-base sm:text-lg"></div>
+                            <p id="feedback-explanation" class="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5 leading-relaxed"></p>
+                        </div>
+                        <button id="btn-next-question" class="btn-3d btn-blue text-white font-display font-bold px-5 py-2.5 rounded-xl text-sm sm:text-base whitespace-nowrap shrink-0">
+                            Lanjut ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== RESULTS / PODIUM SCREEN ==================== -->
+        <section id="results-screen" class="fixed inset-0 z-25 flex items-center justify-center p-3 sm:p-6 overflow-y-auto hidden pointer-auto bg-slate-900/30 backdrop-blur-[3px]">
+            <div class="glass-panel rounded-3xl w-full max-w-2xl p-5 sm:p-7 animate-pop my-auto max-h-[92vh] overflow-y-auto custom-scroll text-center">
+                
+                <div class="text-5xl sm:text-6xl mb-2 animate-float">🏆</div>
+                <h2 id="results-headline" class="font-display font-bold text-2xl sm:text-4xl text-emerald-700">
+                    Balapan Selesai!
+                </h2>
+                <p id="results-subtext" class="text-slate-600 font-bold text-sm sm:text-base mt-1 mb-5">
+                    Luar biasa! Kamu telah belajar menjaga bumi dari efek rumah kaca.
+                </p>
+
+                <!-- Rankings / Podium List -->
+                <div id="results-leaderboard" class="space-y-2.5 mb-5 text-left">
+                    <!-- Dynamically populated results -->
+                </div>
+
+                <!-- Educational Takeaway Card -->
+                <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-5 text-left">
+                    <div class="font-display font-bold text-emerald-800 text-sm sm:text-base mb-1 flex items-center gap-1.5">
+                        <span>🌱</span> Pesan Hijau Efek Rumah Kaca
+                    </div>
+                    <p class="text-xs sm:text-sm text-emerald-900/80 font-semibold leading-relaxed">
+                        Efek rumah kaca alami menjaga suhu Bumi tetap hangat agar bisa dihuni. Namun, emisi gas rumah kaca berlebih (seperti CO₂ dan Metana) memicu pemanasan global. Yuk, hemat energi, kurangi sampah plastik, dan tanam pohon!
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button id="btn-play-again" class="btn-3d btn-green text-white font-display font-bold text-lg py-3 rounded-2xl">
+                        🔄 Main Lagi
+                    </button>
+                    <button id="btn-back-lobby" class="btn-3d btn-blue text-white font-display font-bold text-lg py-3 rounded-2xl">
+                        🏠 Menu Utama
+                    </button>
+                </div>
+
+                <div class="mt-4 text-xs font-extrabold text-slate-500">
+                    🌟 Created by Cikgu Dessy 🌟
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== CUSTOM CONFIRM MODAL (NO alert/confirm) ==================== -->
+        <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden pointer-auto">
+            <div class="glass-panel rounded-3xl max-w-sm w-full p-6 text-center animate-pop">
+                <div class="text-4xl mb-2">🏁</div>
+                <h3 class="font-display font-bold text-xl text-slate-800 mb-1">Keluar dari Balapan?</h3>
+                <p class="text-sm font-semibold text-slate-600 mb-5">Progres balapan saat ini akan direset dan kamu akan kembali ke menu utama.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-cancel-exit" class="btn-3d bg-slate-200 hover:bg-slate-300 text-slate-700 font-display font-bold py-2.5 rounded-xl border-2 border-slate-300 shadow-[0_4px_0_#94a3b8]">
+                        Batal
+                    </button>
+                    <button id="btn-confirm-exit" class="btn-3d btn-rose text-white font-display font-bold py-2.5 rounded-xl">
+                        Ya, Keluar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * =====================================================================
+         * ECORACE 3D: EFEK RUMAH KACA
+         * Created by Cikgu Dessy
+         * Single-file Interactive 3D Educational Racing Quiz Game
+         * =====================================================================
+         */
+
+        /* =====================================================================
+         * 1. SOUND ENGINE (Web Audio API - No External Audio Files Required)
+         * ===================================================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggle() {
+                this.enabled = !this.enabled;
+                return this.enabled;
+            }
+
+            playTone(freq, type, duration, volume = 0.15, startTimeOffset = 0) {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+
+                try {
+                    const now = this.ctx.currentTime + startTimeOffset;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.exponentialRampToValueAtTime(volume, now + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration + 0.02);
+                } catch (e) {
+                    // Fail silently if audio context is blocked
+                }
+            }
+
+            playClick() {
+                this.playTone(520, 'sine', 0.08, 0.12);
+                this.playTone(760, 'triangle', 0.06, 0.08, 0.04);
+            }
+
+            playCountdown(isGo = false) {
+                if (isGo) {
+                    this.playTone(880, 'triangle', 0.35, 0.2);
+                    this.playTone(1174.66, 'sine', 0.45, 0.18, 0.06);
+                } else {
+                    this.playTone(440, 'sine', 0.18, 0.15);
+                }
+            }
+
+            playCorrect() {
+                // Cheerful ascending chime + turbo boost sweep
+                this.playTone(523.25, 'triangle', 0.12, 0.18, 0);     // C5
+                this.playTone(659.25, 'triangle', 0.12, 0.18, 0.08);  // E5
+                this.playTone(783.99, 'triangle', 0.14, 0.2, 0.16);   // G5
+                this.playTone(1046.50, 'sine', 0.3, 0.22, 0.24);      // C6
+                this.playEngineBoost();
+            }
+
+            playEngineBoost() {
+                if (!this.enabled) return;
+                this.init();
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime + 0.1;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(110, now);
+                    osc.frequency.exponentialRampToValueAtTime(340, now + 0.35);
+                    osc.frequency.exponentialRampToValueAtTime(160, now + 0.6);
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.07, now + 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.62);
+                } catch (e) {}
+            }
+
+            playWrong() {
+                // Gentle cartoon bonk
+                this.playTone(280, 'sawtooth', 0.16, 0.12, 0);
+                this.playTone(210, 'sawtooth', 0.25, 0.12, 0.14);
+            }
+
+            playWin() {
+                // Victory fanfare
+                const notes = [
+                    { f: 523.25, t: 0.0, d: 0.15 },
+                    { f: 659.25, t: 0.14, d: 0.15 },
+                    { f: 783.99, t: 0.28, d: 0.15 },
+                    { f: 1046.50, t: 0.44, d: 0.4 },
+                    { f: 783.99, t: 0.62, d: 0.15 },
+                    { f: 1046.50, t: 0.78, d: 0.55 }
+                ];
+                notes.forEach(n => this.playTone(n.f, 'triangle', n.d, 0.2, n.t));
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        /* =====================================================================
+         * 2. QUESTION BANK: TOPIK EFEK RUMAH KACA (16 Soal IPA Berkualitas)
+         * ===================================================================== */
+        const QUESTION_BANK = [
+            {
+                q: "Apa yang dimaksud dengan efek rumah kaca secara alami di Bumi?",
+                options: [
+                    "Proses terperangkapnya panas matahari oleh gas-gas di atmosfer sehingga suhu Bumi tetap hangat",
+                    "Pantulan cahaya matahari dari gedung-gedung berkaca di perkotaan",
+                    "Pendinginan suhu Bumi akibat tebalnya lapisan awan hujan",
+                    "Hilangnya oksigen di atmosfer karena tanaman yang layu"
+                ],
+                answer: 0,
+                explain: "Efek rumah kaca alami sangat penting karena menjaga suhu rata-rata Bumi tetap hangat (~15°C) agar layak dihuni makhluk hidup."
+            },
+            {
+                q: "Gas rumah kaca utama yang paling banyak dihasilkan dari pembakaran bahan bakar fosil (bensin, batu bara) adalah...",
+                options: [
+                    "Oksigen (O₂)",
+                    "Karbon dioksida (CO₂)",
+                    "Nitrogen (N₂)",
+                    "Helium (He)"
+                ],
+                answer: 1,
+                explain: "Pembakaran bahan bakar fosil pada kendaraan dan pembangkit listrik melepaskan gas Karbon Dioksida (CO₂) dalam jumlah sangat besar."
+            },
+            {
+                q: "Manakah di bawah ini yang termasuk kelompok gas rumah kaca?",
+                options: [
+                    "Oksigen, Argon, dan Neon",
+                    "Karbon dioksida (CO₂), Metana (CH₄), dan Dinitrogen oksida (N₂O)",
+                    "Hidrogen, Helium, dan Oksigen",
+                    "Nitrogen, Neon, dan Kripton"
+                ],
+                answer: 1,
+                explain: "CO₂, Metana (CH₄), N₂O, uap air (H₂O), dan CFC adalah gas-gas rumah kaca yang mampu menyerap radiasi panas inframerah."
+            },
+            {
+                q: "Aktivitas peternakan sapi dan pembusukan sampah organik di tempat pembuangan akhir banyak menghasilkan gas rumah kaca berupa...",
+                options: [
+                    "Gas Metana (CH₄)",
+                    "Gas Oksigen (O₂)",
+                    "Gas Argon (Ar)",
+                    "Gas Klorin (Cl₂)"
+                ],
+                answer: 0,
+                explain: "Sampah organik yang membusuk tanpa oksigen dan pencernaan hewan ternak menghasilkan gas Metana (CH₄) yang memerangkap panas sangat kuat."
+            },
+            {
+                q: "Mengapa penebangan hutan secara liar (deforestasi) memperparah efek rumah kaca?",
+                options: [
+                    "Karena pohon menghasilkan gas karbon dioksida setiap siang hari",
+                    "Karena berkurangnya tumbuhan yang menyerap gas CO₂ melalui fotosintesis",
+                    "Karena tanah hutan memantulkan seluruh cahaya matahari ke luar angkasa",
+                    "Karena pohon menghalangi turunnya hujan es di kutub"
+                ],
+                answer: 1,
+                explain: "Tumbuhan menyerap CO₂ saat fotosintesis. Jika hutan gundul, CO₂ menumpuk di atmosfer dan meningkatkan suhu Bumi."
+            },
+            {
+                q: "Peningkatan kadar gas rumah kaca secara berlebihan di atmosfer akan menyebabkan peristiwa...",
+                options: [
+                    "Zaman Es Baru",
+                    "Pemanasan Global (Global Warming)",
+                    "Gerhana Matahari Total",
+                    "Berkurangnya gravitasi Bumi"
+                ],
+                answer: 1,
+                explain: "Efek rumah kaca yang berlebih memerangkap terlalu banyak panas di atmosfer, menyebabkan peningkatan suhu rata-rata Bumi atau Pemanasan Global."
+            },
+            {
+                q: "Salah satu dampak nyata pemanasan global akibat efek rumah kaca berlebih terhadap wilayah kutub adalah...",
+                options: [
+                    "Bertambah luasnya lapisan es abadi di Kutub Utara",
+                    "Mencairnya es di kutub yang menyebabkan naiknya permukaan air laut",
+                    "Suhu di kutub turun drastis hingga membekukan seluruh samudra",
+                    "Berubahnya air laut menjadi air tawar seluruhnya"
+                ],
+                answer: 1,
+                explain: "Suhu Bumi yang memanas mencairkan gletser dan es kutub, sehingga volume air laut meningkat dan mengancam wilayah pesisir."
+            },
+            {
+                q: "Tindakan sederhana di rumah yang dapat membantu mengurangi emisi gas rumah kaca adalah...",
+                options: [
+                    "Menyalakan lampu dan AC sepanjang hari meski ruangan kosong",
+                    "Membakar sampah plastik di halaman rumah setiap sore",
+                    "Mematikan peralatan listrik saat tidak digunakan dan memakai lampu LED hemat energi",
+                    "Menggunakan kendaraan bermotor untuk jarak yang sangat dekat"
+                ],
+                answer: 2,
+                explain: "Sebagian besar listrik masih berasal dari pembangkit berbahan bakar fosil. Menghemat listrik berarti mengurangi emisi CO₂!"
+            },
+            {
+                q: "Sumber energi terbarukan berikut ini yang TIDAK menghasilkan emisi gas rumah kaca saat beroperasi adalah...",
+                options: [
+                    "Pembangkit Listrik Tenaga Batu Bara",
+                    "Panel Surya (Tenaga Matahari) dan Turbin Angin",
+                    "Mesin Diesel berbahan bakar solar",
+                    "Kompor minyak tanah"
+                ],
+                answer: 1,
+                explain: "Energi surya dan angin adalah energi bersih (terbarukan) yang tidak membakar bahan bakar fosil sehingga ramah lingkungan."
+            },
+            {
+                q: "Bagaimana prinsip kerja rumah kaca pertanian yang dianalogikan dengan atmosfer Bumi?",
+                options: [
+                    "Cahaya matahari masuk menembus kaca, lalu panasnya terperangkap di dalam",
+                    "Kaca menghalangi seluruh cahaya matahari agar tanaman tetap dingin",
+                    "Kaca menyerap air hujan agar ruangan menjadi lembap",
+                    "Kaca menghasilkan listrik untuk menyalakan lampu taman"
+                ],
+                answer: 0,
+                explain: "Sama seperti kaca pada rumah tanaman, gas rumah kaca membiarkan sinar matahari masuk tetapi menahan sebagian radiasi panas keluar ke angkasa."
+            },
+            {
+                q: "Apa yang akan terjadi pada suhu Bumi seandainya TIDAK ADA efek rumah kaca sama sekali?",
+                options: [
+                    "Bumi akan sangat panas seperti planet Merkurius",
+                    "Bumi akan sangat dingin membeku (sekitar -18°C) dan sulit dihuni",
+                    "Suhu Bumi akan selalu tetap 30°C sepanjang tahun",
+                    "Air laut akan langsung menguap habis ke luar angkasa"
+                ],
+                answer: 1,
+                explain: "Tanpa efek rumah kaca alami, panas matahari langsung lepas ke angkasa sehingga Bumi akan membeku dengan suhu rata-rata sekitar -18°C."
+            },
+            {
+                q: "Prinsip pengelolaan sampah 3R yang efektif untuk menekan emisi gas rumah kaca adalah...",
+                options: [
+                    "Run, Rest, Repeat",
+                    "Reduce (Kurangi), Reuse (Gunakan kembali), Recycle (Daur ulang)",
+                    "Read, Record, Report",
+                    "Remove, Replace, Rebuild"
+                ],
+                answer: 1,
+                explain: "Menerapkan 3R mengurangi jumlah sampah di TPA dan menghemat energi produksi barang baru, sehingga emisi gas rumah kaca menurun."
+            },
+            {
+                q: "Manakah pilihan transportasi yang paling ramah lingkungan untuk mengurangi jejak karbon ke sekolah?",
+                options: [
+                    "Naik sepeda atau berjalan kaki",
+                    "Diantar mobil pribadi setiap hari seorang diri",
+                    "Menggunakan sepeda motor knalpot bising",
+                    "Menggunakan mobil berbahan bakar bensin jarak 200 meter"
+                ],
+                answer: 0,
+                explain: "Bersepeda dan berjalan kaki tidak menghasilkan gas buang CO₂ sama sekali serta menyehatkan tubuh!"
+            },
+            {
+                q: "Gas CFC (Klorofluorokarbon) yang dulu sering dipakai pada kulkas dan AC lama berbahaya karena...",
+                options: [
+                    "Membuat tanaman tumbuh terlalu cepat",
+                    "Merusak lapisan ozon sekaligus berperan sebagai gas rumah kaca yang kuat",
+                    "Menyebabkan air sungai berubah menjadi manis",
+                    "Mengurangi jumlah uap air di awan"
+                ],
+                answer: 1,
+                explain: "CFC selain menipiskan lapisan ozon pelindung UV, juga memiliki daya perangkap panas ribuan kali lebih kuat dibanding CO₂."
+            },
+            {
+                q: "Program penanaman kembali hutan yang gundul untuk membantu menyerap karbon dioksida di udara disebut...",
+                options: [
+                    "Urbanisasi",
+                    "Reboisasi",
+                    "Abrasi",
+                    "Erosi"
+                ],
+                answer: 1,
+                explain: "Reboisasi (penghijauan kembali) menambah jumlah pohon yang berfungsi sebagai paru-paru dunia penyerap gas CO₂."
+            },
+            {
+                q: "Perubahan iklim ekstrem akibat pemanasan global dapat ditandai dengan...",
+                options: [
+                    "Musim kemarau dan musim hujan yang selalu datang tepat tanggal setiap tahun",
+                    "Gelombang panas, kekeringan berkepanjangan, serta badai dan curah hujan ekstrem",
+                    "Hilangnya angin di seluruh permukaan Bumi",
+                    "Suhu siang dan malam yang tidak pernah berubah"
+                ],
+                answer: 1,
+                explain: "Pemanasan global mengganggu keseimbangan sistem iklim Bumi, memicu cuaca ekstrem seperti gelombang panas, kekeringan, dan banjir."
+            }
+        ];
+
+        /* =====================================================================
+         * 3. GAME STATE & CONFIGURATION
+         * ===================================================================== */
+        const CAR_THEMES = [
+            { name: "Hijau Eco", hex: 0x10b981, cssBg: "bg-emerald-500", cssBorder: "border-emerald-600", badge: "🌿" },
+            { name: "Biru Langit", hex: 0x0ea5e9, cssBg: "bg-sky-500", cssBorder: "border-sky-600", badge: "💧" },
+            { name: "Kuning Surya", hex: 0xf59e0b, cssBg: "bg-amber-400", cssBorder: "border-amber-500", badge: "☀️" },
+            { name: "Merah Ceria", hex: 0xf43f5e, cssBg: "bg-rose-500", cssBorder: "border-rose-600", badge: "🌺" }
+        ];
+
+        const TRACK_LENGTH = 110; // Total 3D distance from Start (z=10) to Finish (z=-100)
+        const START_Z = 10;
+        const FINISH_Z = START_Z - TRACK_LENGTH; // -100
+
+        let gameState = {
+            mode: 'individu', // 'individu' or 'kelompok'
+            soloColorIdx: 0,
+            teamCount: 2,
+            players: [], // { id, name, colorIdx, isBot, score, correct, progress (0..1), targetZ, currentZ, carMesh, boostTimer }
+            questions: [],
+            currentQuestionIdx: 0,
+            activePlayerIdx: 0,
+            timer: 20,
+            timerInterval: null,
+            isAnswering: false,
+            phase: 'lobby' // 'lobby', 'countdown', 'playing', 'finished'
+        };
+
+        /* =====================================================================
+         * 4. THREE.JS 3D CHEERFUL RACING SCENE
+         * ===================================================================== */
+        let scene, camera, renderer;
+        let carsGroup, sceneryGroup, particlesGroup;
+        let windTurbineBlades = [];
+        let clouds = [];
+        let boostParticles = [];
+
+        // Camera Orbit & Follow Controls
+        let camAngle = 0; // Horizontal offset from dragging
+        let camPitch = 0.28; // Vertical angle
+        let isDragging = false;
+        let prevPointer = { x: 0, y: 0 };
+        let cameraTargetPos = new THREE.Vector3(0, 6, 20);
+        let cameraLookAtPos = new THREE.Vector3(0, 1, 0);
+
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x7dd3fc); // Cheerful sky blue
+            scene.fog = new THREE.Fog(0xbae6fd, 45, 165);
+
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 300);
+            camera.position.set(0, 8, 22);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Cheerful Bright Lighting
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x4ade80, 0.85);
+            hemiLight.position.set(0, 50, 0);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.0);
+            dirLight.position.set(25, 45, 25);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 5;
+            dirLight.shadow.camera.far = 160;
+            const d = 65;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            sceneryGroup = new THREE.Group();
+            carsGroup = new THREE.Group();
+            particlesGroup = new THREE.Group();
+            scene.add(sceneryGroup);
+            scene.add(carsGroup);
+            scene.add(particlesGroup);
+
+            buildEnvironment();
+            buildDemoCars(); // Show cheerful cars idling on track in Lobby
+
+            // Window Resize Listener
+            window.addEventListener('resize', onWindowResize);
+
+            // Mouse & Touch Drag Camera Rotation
+            setupCameraDrag(container);
+        }
+
+        function buildEnvironment() {
+            // 1. Lush Green Grass Ground
+            const groundGeo = new THREE.PlaneGeometry(260, 320);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x4ade80 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.set(0, -0.05, -45);
+            ground.receiveShadow = true;
+            sceneryGroup.add(ground);
+
+            // 2. Asphalt Racing Track
+            const trackWidth = 14;
+            const trackGeo = new THREE.PlaneGeometry(trackWidth, TRACK_LENGTH + 40);
+            const trackMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.rotation.x = -Math.PI / 2;
+            track.position.set(0, 0.01, -45);
+            track.receiveShadow = true;
+            sceneryGroup.add(track);
+
+            // 3. Cheerful Red & White Racing Curbs along track edges
+            const curbCount = 38;
+            const curbLen = (TRACK_LENGTH + 40) / curbCount;
+            for (let i = 0; i < curbCount; i++) {
+                const isRed = i % 2 === 0;
+                const curbMat = new THREE.MeshLambertMaterial({ color: isRed ? 0xf43f5e : 0xffffff });
+                const curbGeo = new THREE.BoxGeometry(0.65, 0.14, curbLen);
+                const zPos = 24 - i * curbLen;
+
+                const leftCurb = new THREE.Mesh(curbGeo, curbMat);
+                leftCurb.position.set(-trackWidth / 2 - 0.3, 0.07, zPos);
+                sceneryGroup.add(leftCurb);
+
+                const rightCurb = new THREE.Mesh(curbGeo, curbMat);
+                rightCurb.position.set(trackWidth / 2 + 0.3, 0.07, zPos);
+                sceneryGroup.add(rightCurb);
+            }
+
+            // 4. Dashed White Lane Dividers (for up to 4 lanes)
+            const laneXs = [-3.4, 0, 3.4];
+            const dashGeo = new THREE.PlaneGeometry(0.18, 2.2);
+            const dashMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+            for (let z = 18; z >= FINISH_Z - 10; z -= 5) {
+                laneXs.forEach(lx => {
+                    const dash = new THREE.Mesh(dashGeo, dashMat);
+                    dash.rotation.x = -Math.PI / 2;
+                    dash.position.set(lx, 0.03, z);
+                    sceneryGroup.add(dash);
+                });
+            }
+
+            // 5. Start Line
+            const startLine = new THREE.Mesh(
+                new THREE.PlaneGeometry(trackWidth, 1.2),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            startLine.rotation.x = -Math.PI / 2;
+            startLine.position.set(0, 0.04, START_Z - 1.5);
+            sceneryGroup.add(startLine);
+
+            // 6. Checkered Finish Line & Arch
+            buildFinishArch(FINISH_Z);
+
+            // 7. Eco-Friendly Trackside Props (Trees, Wind Turbines, Solar Panels)
+            for (let z = 16; z >= FINISH_Z - 16; z -= 11) {
+                // Trees on both sides
+                createStylizedTree(-10.5 - Math.random() * 5, z + Math.random() * 3);
+                createStylizedTree(10.5 + Math.random() * 5, z - Math.random() * 3);
+
+                // Extra background trees
+                createStylizedTree(-20 - Math.random() * 10, z);
+                createStylizedTree(20 + Math.random() * 10, z);
+            }
+
+            // Wind Turbines (Clean Energy theme!)
+            createWindTurbine(-15, -18);
+            createWindTurbine(16, -45);
+            createWindTurbine(-16, -75);
+            createWindTurbine(15, -96);
+
+            // Solar Panels (Clean Energy theme!)
+            createSolarPanel(11.5, -8);
+            createSolarPanel(-11.5, -34);
+            createSolarPanel(11.5, -62);
+            createSolarPanel(-11.5, -88);
+
+            // 8. Bright Cheerful Sun
+            const sunGeo = new THREE.SphereGeometry(5.5, 24, 24);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.position.set(35, 38, -110);
+            sceneryGroup.add(sun);
+
+            // 9. Fluffy Drifting Clouds
+            for (let i = 0; i < 12; i++) {
+                const cloud = createCloud();
+                cloud.position.set(
+                    (Math.random() - 0.5) * 90,
+                    18 + Math.random() * 12,
+                    20 - Math.random() * 140
+                );
+                cloud.userData.speed = 0.012 + Math.random() * 0.015;
+                sceneryGroup.add(cloud);
+                clouds.push(cloud);
+            }
+        }
+
+        function buildFinishArch(zPos) {
+            const archGroup = new THREE.Group();
+            archGroup.position.set(0, 0, zPos);
+
+            // Checkered Floor Strip
+            const sqSize = 1;
+            for (let x = -6.5; x <= 6.5; x += sqSize) {
+                for (let row = 0; row < 2; row++) {
+                    const isBlack = (Math.floor(x + 7) + row) % 2 === 0;
+                    const sq = new THREE.Mesh(
+                        new THREE.PlaneGeometry(sqSize, sqSize),
+                        new THREE.MeshBasicMaterial({ color: isBlack ? 0x0f172a : 0xffffff })
+                    );
+                    sq.rotation.x = -Math.PI / 2;
+                    sq.position.set(x, 0.05, row * sqSize - 0.5);
+                    archGroup.add(sq);
+                }
+            }
+
+            // Left & Right Pillars
+            const pillarGeo = new THREE.CylinderGeometry(0.45, 0.55, 8.5, 12);
+            const pillarMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+            const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            leftPillar.position.set(-7.6, 4.25, 0);
+            leftPillar.castShadow = true;
+            archGroup.add(leftPillar);
+
+            const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+            rightPillar.position.set(7.6, 4.25, 0);
+            rightPillar.castShadow = true;
+            archGroup.add(rightPillar);
+
+            // Top Banner Beam
+            const beamGeo = new THREE.BoxGeometry(16.4, 1.8, 1.1);
+            const beamMat = new THREE.MeshLambertMaterial({ color: 0x10b981 });
+            const beam = new THREE.Mesh(beamGeo, beamMat);
+            beam.position.set(0, 8.2, 0);
+            beam.castShadow = true;
+            archGroup.add(beam);
+
+            // Decorative Checkered Cubes on Banner
+            for (let x = -7; x <= 7; x += 1.4) {
+                const isWhite = Math.round(x) % 2 === 0;
+                const badge = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.1, 0.45, 1.2),
+                    new THREE.MeshBasicMaterial({ color: isWhite ? 0xffffff : 0x0f172a })
+                );
+                badge.position.set(x, 8.2, 0);
+                archGroup.add(badge);
+            }
+
+            sceneryGroup.add(archGroup);
+        }
+
+        function createStylizedTree(x, z) {
+            const tree = new THREE.Group();
+            tree.position.set(x, 0, z);
+
+            const scale = 0.85 + Math.random() * 0.5;
+            tree.scale.setScalar(scale);
+
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.32, 0.45, 1.8, 8),
+                new THREE.MeshLambertMaterial({ color: 0x92400e })
+            );
+            trunk.position.y = 0.9;
+            trunk.castShadow = true;
+            tree.add(trunk);
+
+            const foliageColor = Math.random() > 0.5 ? 0x16a34a : 0x22c55e;
+            const foliageMat = new THREE.MeshLambertMaterial({ color: foliageColor });
+
+            const cone1 = new THREE.Mesh(new THREE.ConeGeometry(1.8, 2.8, 8), foliageMat);
+            cone1.position.y = 2.6;
+            cone1.castShadow = true;
+            tree.add(cone1);
+
+            const cone2 = new THREE.Mesh(new THREE.ConeGeometry(1.3, 2.2, 8), foliageMat);
+            cone2.position.y = 4.1;
+            cone2.castShadow = true;
+            tree.add(cone2);
+
+            sceneryGroup.add(tree);
+        }
+
+        function createWindTurbine(x, z) {
+            const turbine = new THREE.Group();
+            turbine.position.set(x, 0, z);
+
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.22, 0.42, 11, 10),
+                new THREE.MeshLambertMaterial({ color: 0xf8fafc })
+            );
+            pole.position.y = 5.5;
+            pole.castShadow = true;
+            turbine.add(pole);
+
+            const hub = new THREE.Mesh(
+                new THREE.SphereGeometry(0.45, 10, 10),
+                new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+            );
+            hub.position.set(0, 11, 0.3);
+            turbine.add(hub);
+
+            const rotor = new THREE.Group();
+            rotor.position.set(0, 11, 0.5);
+
+            const bladeGeo = new THREE.BoxGeometry(0.32, 3.8, 0.08);
+            const bladeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            for (let i = 0; i < 3; i++) {
+                const pivot = new THREE.Group();
+                pivot.rotation.z = (i * Math.PI * 2) / 3;
+                const blade = new THREE.Mesh(bladeGeo, bladeMat);
+                blade.position.y = 1.9;
+                pivot.add(blade);
+                rotor.add(pivot);
+            }
+
+            turbine.add(rotor);
+            windTurbineBlades.push(rotor);
+            sceneryGroup.add(turbine);
+        }
+
+        function createSolarPanel(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0, z);
+
+            const stand = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.2, 1.4, 8),
+                new THREE.MeshLambertMaterial({ color: 0x64748b })
+            );
+            stand.position.y = 0.7;
+            group.add(stand);
+
+            const panel = new THREE.Mesh(
+                new THREE.BoxGeometry(2.6, 0.12, 1.8),
+                new THREE.MeshLambertMaterial({ color: 0x1d4ed8 })
+            );
+            panel.position.y = 1.45;
+            panel.rotation.x = 0.4;
+            panel.castShadow = true;
+            group.add(panel);
+
+            const frame = new THREE.Mesh(
+                new THREE.BoxGeometry(2.75, 0.08, 1.95),
+                new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
+            );
+            frame.position.y = 1.42;
+            frame.rotation.x = 0.4;
+            group.add(frame);
+
+            sceneryGroup.add(group);
+        }
+
+        function createCloud() {
+            const cloud = new THREE.Group();
+            const mat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const positions = [
+                [0, 0, 0, 2.2],
+                [1.8, -0.2, 0.3, 1.7],
+                [-1.8, -0.3, -0.2, 1.6],
+                [0.6, 0.7, -0.3, 1.5]
+            ];
+            positions.forEach(([px, py, pz, r]) => {
+                const puff = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), mat);
+                puff.position.set(px, py, pz);
+                cloud.add(puff);
+            });
+            return cloud;
+        }
+
+        /**
+         * Build a Cheerful 3D Low-Poly Racing Car
+         */
+        function createRacingCar(colorHex) {
+            const car = new THREE.Group();
+
+            // Main Body
+            const bodyMat = new THREE.MeshPhongMaterial({ color: colorHex, shininess: 80 });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.65, 3.6), bodyMat);
+            body.position.y = 0.62;
+            body.castShadow = true;
+            car.add(body);
+
+            // Aerodynamic Nose
+            const nose = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 0.8), bodyMat);
+            nose.position.set(0, 0.5, -2.0);
+            nose.castShadow = true;
+            car.add(nose);
+
+            // Cabin & Windshield
+            const cabin = new THREE.Mesh(
+                new THREE.BoxGeometry(1.35, 0.58, 1.7),
+                new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 100 })
+            );
+            cabin.position.set(0, 1.15, 0.15);
+            cabin.castShadow = true;
+            car.add(cabin);
+
+            const glassMat = new THREE.MeshPhongMaterial({ color: 0x0f172a, shininess: 120 });
+            const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.42, 1.76), glassMat);
+            windshield.position.set(0, 1.16, 0.15);
+            car.add(windshield);
+
+            // Racing Spoiler
+            const spoilerStandMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const standL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.2), spoilerStandMat);
+            standL.position.set(-0.6, 1.1, 1.55);
+            car.add(standL);
+
+            const standR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.2), spoilerStandMat);
+            standR.position.set(0.6, 1.1, 1.55);
+            car.add(standR);
+
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.12, 0.45), bodyMat);
+            wing.position.set(0, 1.35, 1.6);
+            wing.castShadow = true;
+            car.add(wing);
+
+            // Headlights
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            const headL = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.1), lightMat);
+            headL.position.set(-0.55, 0.65, -2.38);
+            car.add(headL);
+
+            const headR = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.1), lightMat);
+            headR.position.set(0.55, 0.65, -2.38);
+            car.add(headR);
+
+            // 4 Wheels
+            const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.34, 16);
+            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const rimGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.36, 10);
+            const rimMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+
+            const wheelCoords = [
+                [-0.95, 0.42, -1.15],
+                [0.95, 0.42, -1.15],
+                [-0.95, 0.42, 1.15],
+                [0.95, 0.42, 1.15]
+            ];
+
+            car.userData.wheels = [];
+            wheelCoords.forEach(([wx, wy, wz]) => {
+                const wheelGroup = new THREE.Group();
+                wheelGroup.position.set(wx, wy, wz);
+
+                const tire = new THREE.Mesh(wheelGeo, wheelMat);
+                tire.rotation.z = Math.PI / 2;
+                tire.castShadow = true;
+                wheelGroup.add(tire);
+
+                const rim = new THREE.Mesh(rimGeo, rimMat);
+                rim.rotation.z = Math.PI / 2;
+                wheelGroup.add(rim);
+
+                car.add(wheelGroup);
+                car.userData.wheels.push(wheelGroup);
+            });
+
+            return car;
+        }
+
+        function clearCars() {
+            while (carsGroup.children.length > 0) {
+                carsGroup.remove(carsGroup.children[0]);
+            }
+        }
+
+        function buildDemoCars() {
+            clearCars();
+            const lanes = [-4.5, -1.5, 1.5, 4.5];
+            CAR_THEMES.forEach((theme, idx) => {
+                const car = createRacingCar(theme.hex);
+                car.position.set(lanes[idx], 0, START_Z - idx * 2);
+                carsGroup.add(car);
+            });
+        }
+
+        function spawnRaceCars() {
+            clearCars();
+            const count = gameState.players.length;
+            let lanes = [0];
+            if (count === 2) lanes = [-2.5, 2.5];
+            else if (count === 3) lanes = [-4.0, 0, 4.0];
+            else if (count === 4) lanes = [-5.0, -1.65, 1.65, 5.0];
+
+            gameState.players.forEach((p, idx) => {
+                const car = createRacingCar(CAR_THEMES[p.colorIdx].hex);
+                car.position.set(lanes[idx], 0, START_Z);
+                p.laneX = lanes[idx];
+                p.currentZ = START_Z;
+                p.targetZ = START_Z;
+                p.carMesh = car;
+                p.boostTimer = 0;
+                carsGroup.add(car);
+            });
+        }
+
+        function spawnNitroBurst(x, z, colorHex) {
+            for (let i = 0; i < 16; i++) {
+                const geo = new THREE.SphereGeometry(0.18 + Math.random() * 0.16, 8, 8);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? 0xfde047 : colorHex,
+                    transparent: true,
+                    opacity: 0.95
+                });
+                const p = new THREE.Mesh(geo, mat);
+                p.position.set(x + (Math.random() - 0.5) * 1.1, 0.55 + Math.random() * 0.4, z + 1.8);
+                p.userData = {
+                    vx: (Math.random() - 0.5) * 0.12,
+                    vy: 0.05 + Math.random() * 0.12,
+                    vz: 0.18 + Math.random() * 0.25,
+                    life: 1.0
+                };
+                particlesGroup.add(p);
+                boostParticles.push(p);
+            }
+        }
+
+        function setupCameraDrag(container) {
+            const onDown = (x, y) => {
+                isDragging = true;
+                prevPointer = { x, y };
+            };
+            const onMove = (x, y) => {
+                if (!isDragging) return;
+                const dx = x - prevPointer.x;
+                const dy = y - prevPointer.y;
+                camAngle -= dx * 0.006;
+                camAngle = Math.max(-1.1, Math.min(1.1, camAngle));
+                camPitch += dy * 0.004;
+                camPitch = Math.max(0.15, Math.min(0.65, camPitch));
+                prevPointer = { x, y };
+            };
+            const onUp = () => { isDragging = false; };
+
+            container.addEventListener('mousedown', e => onDown(e.clientX, e.clientY));
+            window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', onUp);
+
+            container.addEventListener('touchstart', e => {
+                if (e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            window.addEventListener('touchmove', e => {
+                if (e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            window.addEventListener('touchend', onUp);
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            resizeConfetti();
+        }
+
+        /**
+         * Main 3D Animation Loop
+         */
+        let clockTime = 0;
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            clockTime += 0.016;
+
+            // Spin Wind Turbines
+            windTurbineBlades.forEach(rotor => {
+                rotor.rotation.z -= 0.035;
+            });
+
+            // Drift Clouds
+            clouds.forEach(c => {
+                c.position.x += c.userData.speed;
+                if (c.position.x > 55) c.position.x = -55;
+            });
+
+            // Update Nitro Boost Particles
+            for (let i = boostParticles.length - 1; i >= 0; i--) {
+                const p = boostParticles[i];
+                p.position.x += p.userData.vx;
+                p.position.y += p.userData.vy;
+                p.position.z += p.userData.vz;
+                p.userData.life -= 0.03;
+                p.material.opacity = Math.max(0, p.userData.life);
+                p.scale.setScalar(Math.max(0.01, p.userData.life));
+                if (p.userData.life <= 0) {
+                    particlesGroup.remove(p);
+                    boostParticles.splice(i, 1);
+                }
+            }
+
+            // Animate Cars & Camera based on Game Phase
+            if (gameState.phase === 'lobby') {
+                // Gentle camera orbit in lobby
+                const orbitAngle = Math.sin(clockTime * 0.25) * 0.5 + camAngle;
+                camera.position.x = Math.sin(orbitAngle) * 16;
+                camera.position.y = 7.5 + Math.sin(clockTime * 0.5) * 0.6;
+                camera.position.z = 21;
+                camera.lookAt(0, 1.2, -5);
+
+                // Idle bounce on demo cars
+                carsGroup.children.forEach((car, idx) => {
+                    car.position.y = Math.abs(Math.sin(clockTime * 5 + idx)) * 0.07;
+                });
+            } else {
+                // Smoothly move race cars toward their targetZ
+                let focusZ = START_Z;
+                let focusX = 0;
+
+                gameState.players.forEach((p, idx) => {
+                    if (!p.carMesh) return;
+                    const diff = p.targetZ - p.currentZ;
+                    if (Math.abs(diff) > 0.05) {
+                        p.currentZ += diff * 0.07;
+                        p.carMesh.position.z = p.currentZ;
+                        // Spin wheels fast when moving
+                        p.carMesh.userData.wheels.forEach(w => w.rotation.x -= 0.35);
+                        p.carMesh.position.y = Math.abs(Math.sin(clockTime * 18)) * 0.08;
+                    } else {
+                        // Gentle idle engine vibration
+                        p.carMesh.position.y = Math.abs(Math.sin(clockTime * 7 + idx)) * 0.03;
+                    }
+
+                    // Nitro boost glow trail
+                    if (p.boostTimer > 0) {
+                        p.boostTimer -= 0.016;
+                        if (Math.random() < 0.4) {
+                            spawnNitroBurst(p.laneX, p.currentZ, CAR_THEMES[p.colorIdx].hex);
+                        }
+                    }
+                });
+
+                // Follow active player (or leader on finish)
+                let focusPlayer = gameState.players[gameState.activePlayerIdx] || gameState.players[0];
+                if (gameState.phase === 'finished') {
+                    // Focus on winning car
+                    const sorted = [...gameState.players].sort((a, b) => b.score - a.score);
+                    focusPlayer = sorted[0];
+                }
+
+                if (focusPlayer) {
+                    focusZ = focusPlayer.currentZ;
+                    focusX = focusPlayer.laneX * 0.35;
+                }
+
+                const dist = 16.5;
+                const desiredX = focusX + Math.sin(camAngle) * dist;
+                const desiredY = 4.5 + camPitch * 14;
+                const desiredZ = focusZ + Math.cos(camAngle) * dist;
+
+                camera.position.lerp(new THREE.Vector3(desiredX, desiredY, desiredZ), 0.08);
+                cameraLookAtPos.lerp(new THREE.Vector3(focusX, 1.2, focusZ - 8), 0.08);
+                camera.lookAt(cameraLookAtPos);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        /* =====================================================================
+         * 5. CONFETTI CELEBRATION EFFECT
+         * ===================================================================== */
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        let confettiPieces = [];
+        let confettiActive = false;
+
+        function resizeConfetti() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+
+        function startConfetti() {
+            resizeConfetti();
+            confettiPieces = [];
+            const colors = ['#10b981', '#38bdf8', '#fbbf24', '#f43f5e', '#a78bfa', '#ffffff'];
+            for (let i = 0; i < 120; i++) {
+                confettiPieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * -confettiCanvas.height,
+                    w: 7 + Math.random() * 7,
+                    h: 5 + Math.random() * 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    vy: 2.5 + Math.random() * 3.5,
+                    vx: (Math.random() - 0.5) * 2.5,
+                    rot: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 8
+                });
+            }
+            confettiActive = true;
+            requestAnimationFrame(drawConfetti);
+        }
+
+        function stopConfetti() {
+            confettiActive = false;
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        }
+
+        function drawConfetti() {
+            if (!confettiActive) return;
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+            confettiPieces.forEach(p => {
+                p.y += p.vy;
+                p.x += p.vx;
+                p.rot += p.vRot;
+                if (p.y > confettiCanvas.height + 20) {
+                    p.y = -15;
+                    p.x = Math.random() * confettiCanvas.width;
+                }
+                confettiCtx.save();
+                confettiCtx.translate(p.x, p.y);
+                confettiCtx.rotate((p.rot * Math.PI) / 180);
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                confettiCtx.restore();
+            });
+
+            requestAnimationFrame(drawConfetti);
+        }
+
+        /* =====================================================================
+         * 6. UI & GAME LOGIC
+         * ===================================================================== */
+        const el = {
+            lobbyScreen: document.getElementById('lobby-screen'),
+            topHud: document.getElementById('top-hud'),
+            quizPanel: document.getElementById('quiz-panel'),
+            resultsScreen: document.getElementById('results-screen'),
+            countdownOverlay: document.getElementById('countdown-overlay'),
+            countdownText: document.getElementById('countdown-text'),
+            confirmModal: document.getElementById('confirm-modal'),
+
+            tabIndividu: document.getElementById('tab-individu'),
+            tabKelompok: document.getElementById('tab-kelompok'),
+            configIndividu: document.getElementById('config-individu'),
+            configKelompok: document.getElementById('config-kelompok'),
+            teamNamesContainer: document.getElementById('team-names-container'),
+
+            hudScoreboard: document.getElementById('hud-scoreboard'),
+            hudProgress: document.getElementById('hud-progress'),
+            turnBadge: document.getElementById('turn-badge'),
+            turnLabel: document.getElementById('turn-label'),
+            timerText: document.getElementById('timer-text'),
+            timerBar: document.getElementById('timer-bar'),
+            questionText: document.getElementById('question-text'),
+            optionsGrid: document.getElementById('options-grid'),
+            feedbackBox: document.getElementById('feedback-box'),
+            feedbackTitle: document.getElementById('feedback-title'),
+            feedbackExplanation: document.getElementById('feedback-explanation'),
+            btnNextQuestion: document.getElementById('btn-next-question'),
+
+            resultsHeadline: document.getElementById('results-headline'),
+            resultsSubtext: document.getElementById('results-subtext'),
+            resultsLeaderboard: document.getElementById('results-leaderboard')
+        };
+
+        // Render Team Name Inputs for Group Mode
+        function renderTeamInputs() {
+            const defaults = ["Tim Hijau", "Tim Biru", "Tim Surya", "Tim Merah"];
+            el.teamNamesContainer.innerHTML = '';
+            for (let i = 0; i < gameState.teamCount; i++) {
+                const theme = CAR_THEMES[i];
+                const wrap = document.createElement('div');
+                wrap.className = 'flex items-center gap-2 bg-white px-3 py-2 rounded-xl border-2 border-sky-200';
+                wrap.innerHTML = `
+                    <span class="w-7 h-7 rounded-full ${theme.cssBg} text-white flex items-center justify-center text-sm shrink-0">${theme.badge}</span>
+                    <input type="text" data-team-idx="${i}" value="${defaults[i]}" maxlength="14" class="team-name-input w-full font-bold text-slate-700 text-sm focus:outline-none">
+                `;
+                el.teamNamesContainer.appendChild(wrap);
+            }
+        }
+
+        // Mode Switching
+        function setMode(mode) {
+            sound.playClick();
+            gameState.mode = mode;
+            if (mode === 'individu') {
+                el.tabIndividu.className = 'btn-3d btn-green text-white rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3';
+                el.tabIndividu.querySelector('.text-xs').className = 'text-xs text-emerald-50 font-semibold';
+                el.tabKelompok.className = 'btn-3d bg-slate-100 hover:bg-slate-200 text-slate-700 border-2 border-slate-300 shadow-[0_5px_0_#cbd5e1] rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3';
+                el.tabKelompok.querySelector('.text-xs').className = 'text-xs text-slate-500 font-semibold';
+
+                el.configIndividu.classList.remove('hidden');
+                el.configKelompok.classList.add('hidden');
+            } else {
+                el.tabKelompok.className = 'btn-3d btn-blue text-white rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3';
+                el.tabKelompok.querySelector('.text-xs').className = 'text-xs text-sky-50 font-semibold';
+                el.tabIndividu.className = 'btn-3d bg-slate-100 hover:bg-slate-200 text-slate-700 border-2 border-slate-300 shadow-[0_5px_0_#cbd5e1] rounded-2xl p-3 sm:p-4 text-left flex items-center gap-3';
+                el.tabIndividu.querySelector('.text-xs').className = 'text-xs text-slate-500 font-semibold';
+
+                el.configIndividu.classList.add('hidden');
+                el.configKelompok.classList.remove('hidden');
+                renderTeamInputs();
+            }
+        }
+
+        // Shuffle helper
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        // Start New Game
+        function startGame() {
+            sound.init();
+            sound.playClick();
+            stopConfetti();
+
+            gameState.players = [];
+            let totalQuestions = 10;
+
+            if (gameState.mode === 'individu') {
+                const pName = document.getElementById('input-player-name').value.trim() || "Pembalap Hijau";
+                totalQuestions = parseInt(document.getElementById('select-solo-questions').value, 10);
+                const botColor = (gameState.soloColorIdx + 1) % CAR_THEMES.length;
+
+                gameState.players.push({
+                    id: 0,
+                    name: pName,
+                    colorIdx: gameState.soloColorIdx,
+                    isBot: false,
+                    score: 0,
+                    correct: 0,
+                    totalTurns: totalQuestions
+                });
+                // Friendly Rival AI Car so Solo mode feels like an exciting race!
+                gameState.players.push({
+                    id: 1,
+                    name: "Eco-Bot 🤖",
+                    colorIdx: botColor,
+                    isBot: true,
+                    score: 0,
+                    correct: 0,
+                    totalTurns: totalQuestions
+                });
+            } else {
+                const qPerTeam = parseInt(document.getElementById('select-group-qpt').value, 10);
+                const inputs = document.querySelectorAll('.team-name-input');
+                inputs.forEach((inp, idx) => {
+                    gameState.players.push({
+                        id: idx,
+                        name: inp.value.trim() || `Tim ${idx + 1}`,
+                        colorIdx: idx,
+                        isBot: false,
+                        score: 0,
+                        correct: 0,
+                        totalTurns: qPerTeam
+                    });
+                });
+                totalQuestions = gameState.players.length * qPerTeam;
+            }
+
+            // Prepare shuffled questions
+            let pool = shuffleArray(QUESTION_BANK);
+            while (pool.length < totalQuestions) {
+                pool = pool.concat(shuffleArray(QUESTION_BANK));
+            }
+            gameState.questions = pool.slice(0, totalQuestions);
+            gameState.currentQuestionIdx = 0;
+            gameState.activePlayerIdx = 0;
+
+            // Spawn 3D Cars on Starting Grid
+            spawnRaceCars();
+
+            // Switch UI to Countdown
+            el.lobbyScreen.classList.add('hidden');
+            el.resultsScreen.classList.add('hidden');
+            el.topHud.classList.remove('hidden');
+            el.quizPanel.classList.add('hidden');
+            updateHUD();
+
+            runCountdown();
+        }
+
+        function runCountdown() {
+            gameState.phase = 'countdown';
+            el.countdownOverlay.classList.remove('hidden');
+            const steps = ['3', '2', '1', 'GO! 🏁'];
+            let idx = 0;
+
+            const showStep = () => {
+                el.countdownText.textContent = steps[idx];
+                el.countdownText.classList.remove('animate-pop');
+                void el.countdownText.offsetWidth; // trigger reflow
+                el.countdownText.classList.add('animate-pop');
+
+                if (idx === steps.length - 1) {
+                    sound.playCountdown(true);
+                    setTimeout(() => {
+                        el.countdownOverlay.classList.add('hidden');
+                        gameState.phase = 'playing';
+                        el.quizPanel.classList.remove('hidden');
+                        loadCurrentQuestion();
+                    }, 650);
+                } else {
+                    sound.playCountdown(false);
+                    idx++;
+                    setTimeout(showStep, 750);
+                }
+            };
+            showStep();
+        }
+
+        function updateHUD() {
+            el.hudProgress.textContent = `${Math.min(gameState.currentQuestionIdx + 1, gameState.questions.length)}/${gameState.questions.length}`;
+            el.hudScoreboard.innerHTML = '';
+
+            gameState.players.forEach((p, idx) => {
+                const theme = CAR_THEMES[p.colorIdx];
+                const isActive = (gameState.phase === 'playing' && idx === gameState.activePlayerIdx);
+                const pill = document.createElement('div');
+                pill.className = `flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl border-2 transition-all ${
+                    isActive
+                        ? 'bg-white border-amber-400 shadow-lg scale-105 ring-2 ring-amber-300'
+                        : 'bg-white/85 border-white shadow-sm'
+                }`;
+                pill.innerHTML = `
+                    <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full ${theme.cssBg} text-white flex items-center justify-center text-xs">${theme.badge}</span>
+                    <div class="leading-tight">
+                        <div class="text-[11px] sm:text-xs font-extrabold text-slate-700 max-w-[78px] sm:max-w-[100px] truncate">${p.name}</div>
+                        <div class="text-xs font-display font-bold text-emerald-600">${p.score} pts</div>
+                    </div>
+                `;
+                el.hudScoreboard.appendChild(pill);
+            });
+        }
+
+        function loadCurrentQuestion() {
+            const qObj = gameState.questions[gameState.currentQuestionIdx];
+            const activePlayer = gameState.players[gameState.activePlayerIdx];
+            const theme = CAR_THEMES[activePlayer.colorIdx];
+
+            gameState.isAnswering = true;
+            el.feedbackBox.classList.add('hidden');
+            updateHUD();
+
+            // Update Turn Banner
+            el.turnBadge.className = `inline-flex items-center gap-2 px-3.5 py-1 rounded-full font-display font-bold text-sm sm:text-base text-white shadow-sm ${theme.cssBg}`;
+            el.turnLabel.textContent = gameState.mode === 'individu'
+                ? `Pembalap: ${activePlayer.name}`
+                : `Giliran: ${activePlayer.name}`;
+
+            // Render Question
+            el.questionText.textContent = qObj.q;
+
+            // Render 4 Options
+            const letters = ['A', 'B', 'C', 'D'];
+            const btnColors = [
+                'bg-sky-50 hover:bg-sky-100 border-sky-300 text-slate-800',
+                'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-slate-800',
+                'bg-amber-50 hover:bg-amber-100 border-amber-300 text-slate-800',
+                'bg-purple-50 hover:bg-purple-100 border-purple-300 text-slate-800'
+            ];
+
+            el.optionsGrid.innerHTML = '';
+            qObj.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-3d option-btn w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 shadow-[0_4px_0_rgba(0,0,0,0.1)] font-bold text-xs sm:text-sm flex items-start gap-2.5 transition-all ${btnColors[idx]}`;
+                btn.innerHTML = `
+                    <span class="w-7 h-7 rounded-xl bg-white border border-slate-200 font-display font-bold text-slate-700 flex items-center justify-center shrink-0 shadow-sm">${letters[idx]}</span>
+                    <span class="leading-snug pt-0.5">${optText}</span>
+                `;
+                btn.addEventListener('click', () => handleAnswer(idx));
+                el.optionsGrid.appendChild(btn);
+            });
+
+            // Start 20s Timer
+            startQuestionTimer();
+        }
+
+        function startQuestionTimer() {
+            clearInterval(gameState.timerInterval);
+            gameState.timer = 20;
+            updateTimerUI();
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer -= 0.1;
+                if (gameState.timer <= 0) {
+                    gameState.timer = 0;
+                    clearInterval(gameState.timerInterval);
+                    updateTimerUI();
+                    handleAnswer(-1); // Timeout
+                } else {
+                    updateTimerUI();
+                }
+            }, 100);
+        }
+
+        function updateTimerUI() {
+            const pct = Math.max(0, (gameState.timer / 20) * 100);
+            el.timerBar.style.width = `${pct}%`;
+            el.timerText.textContent = `${Math.ceil(gameState.timer)}s`;
+            if (gameState.timer <= 5) {
+                el.timerText.classList.add('text-rose-600', 'animate-pulse-fast');
+                el.timerText.classList.remove('text-amber-600');
+            } else {
+                el.timerText.classList.remove('text-rose-600', 'animate-pulse-fast');
+                el.timerText.classList.add('text-amber-600');
+            }
+        }
+
+        function handleAnswer(selectedIdx) {
+            if (!gameState.isAnswering) return;
+            gameState.isAnswering = false;
+            clearInterval(gameState.timerInterval);
+
+            const qObj = gameState.questions[gameState.currentQuestionIdx];
+            const player = gameState.players[gameState.activePlayerIdx];
+            const isCorrect = (selectedIdx === qObj.answer);
+
+            // Highlight Option Buttons
+            const optionBtns = el.optionsGrid.querySelectorAll('.option-btn');
+            optionBtns.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === qObj.answer) {
+                    btn.className = 'btn-3d option-btn w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 bg-emerald-500 border-emerald-700 text-white font-bold text-xs sm:text-sm flex items-start gap-2.5 shadow-md';
+                } else if (idx === selectedIdx && !isCorrect) {
+                    btn.className = 'btn-3d option-btn w-full text-left p-3 sm:p-3.5 rounded-2xl border-2 bg-rose-500 border-rose-700 text-white font-bold text-xs sm:text-sm flex items-start gap-2.5 shadow-md';
+                } else {
+                    btn.classList.add('opacity-50');
+                }
+            });
+
+            // Calculate Step Distance on 3D Track
+            const stepDistance = TRACK_LENGTH / player.totalTurns;
+
+            if (isCorrect) {
+                sound.playCorrect();
+                const speedBonus = Math.round(gameState.timer * 5); // up to +100 speed bonus
+                const pointsEarned = 100 + speedBonus;
+                player.score += pointsEarned;
+                player.correct += 1;
+                player.targetZ = Math.max(FINISH_Z, player.targetZ - stepDistance);
+                player.boostTimer = 0.85;
+                spawnNitroBurst(player.laneX, player.currentZ, CAR_THEMES[player.colorIdx].hex);
+
+                el.feedbackBox.className = 'mt-3.5 p-3.5 rounded-2xl border-2 bg-emerald-50 border-emerald-300 animate-pop';
+                el.feedbackTitle.className = 'font-display font-bold text-base sm:text-lg text-emerald-700';
+                el.feedbackTitle.textContent = `🚀 Benar! Nitro Boost +${pointsEarned} poin!`;
+            } else {
+                sound.playWrong();
+                // Slight consolation roll forward so car stays lively, or stays put
+                el.feedbackBox.className = 'mt-3.5 p-3.5 rounded-2xl border-2 bg-rose-50 border-rose-300 animate-pop';
+                el.feedbackTitle.className = 'font-display font-bold text-base sm:text-lg text-rose-700';
+                el.feedbackTitle.textContent = selectedIdx === -1
+                    ? '⏰ Waktu Habis! Mesin tersendat...'
+                    : '😅 Kurang Tepat! Tetap semangat ya!';
+            }
+
+            // In Mode Individu, Eco-Bot also takes its turn (~65% accuracy)
+            if (gameState.mode === 'individu') {
+                const bot = gameState.players[1];
+                const botStep = TRACK_LENGTH / bot.totalTurns;
+                const botRight = Math.random() < 0.65;
+                if (botRight) {
+                    const botPts = 100 + Math.floor(Math.random() * 65);
+                    bot.score += botPts;
+                    bot.correct += 1;
+                    bot.targetZ = Math.max(FINISH_Z, bot.targetZ - botStep);
+                    bot.boostTimer = 0.5;
+                }
+            }
+
+            el.feedbackExplanation.textContent = qObj.explain;
+            el.feedbackBox.classList.remove('hidden');
+
+            const isLastQuestion = (gameState.currentQuestionIdx >= gameState.questions.length - 1);
+            el.btnNextQuestion.textContent = isLastQuestion ? 'Lihat Hasil 🏆' : 'Lanjut ➔';
+
+            updateHUD();
+        }
+
+        function nextTurn() {
+            sound.playClick();
+            gameState.currentQuestionIdx++;
+
+            if (gameState.currentQuestionIdx >= gameState.questions.length) {
+                finishGame();
+                return;
+            }
+
+            // Rotate active player in Group Mode (in Solo mode, player is always index 0)
+            if (gameState.mode === 'kelompok') {
+                gameState.activePlayerIdx = (gameState.activePlayerIdx + 1) % gameState.players.length;
+            } else {
+                gameState.activePlayerIdx = 0;
+            }
+
+            loadCurrentQuestion();
+        }
+
+        function finishGame() {
+            gameState.phase = 'finished';
+            clearInterval(gameState.timerInterval);
+            sound.playWin();
+            startConfetti();
+
+            el.quizPanel.classList.add('hidden');
+            el.resultsScreen.classList.remove('hidden');
+
+            // Sort leaderboard by score (then correct count)
+            const ranked = [...gameState.players].sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return b.correct - a.correct;
+            });
+
+            const winner = ranked[0];
+            if (gameState.mode === 'individu') {
+                const human = gameState.players[0];
+                const accuracy = Math.round((human.correct / human.totalTurns) * 100);
+                if (winner.id === human.id) {
+                    el.resultsHeadline.textContent = `🎉 Hebat, ${human.name} Juara!`;
+                    el.resultsSubtext.textContent = `Kamu mengalahkan Eco-Bot dengan akurasi ${accuracy}%!`;
+                } else {
+                    el.resultsHeadline.textContent = `🏁 Balapan Selesai!`;
+                    el.resultsSubtext.textContent = `Eco-Bot unggul tipis! Akurasimu ${accuracy}%, yuk coba lagi!`;
+                }
+            } else {
+                el.resultsHeadline.textContent = `🏆 Juara 1: ${winner.name}!`;
+                el.resultsSubtext.textContent = `Selamat untuk seluruh kelompok yang telah menyelesaikan balapan Efek Rumah Kaca!`;
+            }
+
+            const medals = ['🥇', '🥈', '🥉', '🎖️'];
+            el.resultsLeaderboard.innerHTML = '';
+
+            ranked.forEach((p, idx) => {
+                const theme = CAR_THEMES[p.colorIdx];
+                const acc = Math.round((p.correct / p.totalTurns) * 100);
+                let ecoTitle = "Pejuang Hijau";
+                if (acc >= 90) ecoTitle = "Pahlawan Iklim Bumi 🌟";
+                else if (acc >= 70) ecoTitle = "Penjaga Atmosfer 🌿";
+                else if (acc >= 50) ecoTitle = "Sahabat Lingkungan 💧";
+
+                const card = document.createElement('div');
+                card.className = `flex items-center justify-between p-3.5 rounded-2xl border-2 ${
+                    idx === 0
+                        ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300 shadow-md'
+                        : 'bg-white border-slate-200'
+                }`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl sm:text-3xl">${medals[idx] || '🏁'}</span>
+                        <span class="w-9 h-9 rounded-full ${theme.cssBg} text-white flex items-center justify-center text-lg shadow-sm">${theme.badge}</span>
+                        <div>
+                            <div class="font-display font-bold text-slate-800 text-base sm:text-lg leading-tight">${p.name}</div>
+                            <div class="text-xs font-bold text-slate-500">${p.correct}/${p.totalTurns} Benar • ${ecoTitle}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-display font-bold text-xl sm:text-2xl text-emerald-600">${p.score}</div>
+                        <div class="text-[11px] font-extrabold text-slate-400 uppercase">Poin</div>
+                    </div>
+                `;
+                el.resultsLeaderboard.appendChild(card);
+            });
+        }
+
+        function returnToLobby() {
+            sound.playClick();
+            clearInterval(gameState.timerInterval);
+            stopConfetti();
+            gameState.phase = 'lobby';
+            camAngle = 0;
+
+            el.confirmModal.classList.add('hidden');
+            el.topHud.classList.add('hidden');
+            el.quizPanel.classList.add('hidden');
+            el.resultsScreen.classList.add('hidden');
+            el.lobbyScreen.classList.remove('hidden');
+
+            buildDemoCars();
+        }
+
+        /* =====================================================================
+         * 7. EVENT LISTENERS & INITIALIZATION
+         * ===================================================================== */
+        function setupEventListeners() {
+            // Mode Tabs
+            el.tabIndividu.addEventListener('click', () => setMode('individu'));
+            el.tabKelompok.addEventListener('click', () => setMode('kelompok'));
+
+            // Solo Color Picker
+            document.querySelectorAll('.color-choice').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sound.playClick();
+                    gameState.soloColorIdx = parseInt(btn.dataset.color, 10);
+                    document.querySelectorAll('.color-choice').forEach(b => {
+                        b.classList.remove('ring-4', 'ring-emerald-500', 'ring-slate-800', 'opacity-100');
+                        b.classList.add('opacity-80');
+                    });
+                    btn.classList.remove('opacity-80');
+                    btn.classList.add('ring-4', 'ring-slate-800', 'opacity-100');
+                });
+            });
+
+            // Group Team Count Buttons
+            document.querySelectorAll('.team-count-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sound.playClick();
+                    gameState.teamCount = parseInt(btn.dataset.teams, 10);
+                    document.querySelectorAll('.team-count-btn').forEach(b => {
+                        b.className = 'team-count-btn bg-white text-sky-700 border-2 border-sky-200 font-bold py-2 rounded-xl text-sm';
+                    });
+                    btn.className = 'team-count-btn bg-sky-500 text-white font-bold py-2 rounded-xl shadow text-sm';
+                    renderTeamInputs();
+                });
+            });
+
+            // Sound Toggles
+            const toggleSoundUI = () => {
+                const on = sound.toggle();
+                document.getElementById('sound-icon-lobby').textContent = on ? '🔊' : '🔇';
+                document.getElementById('btn-sound-hud').textContent = on ? '🔊' : '🔇';
+                if (on) sound.playClick();
+            };
+            document.getElementById('btn-sound-lobby').addEventListener('click', toggleSoundUI);
+            document.getElementById('btn-sound-hud').addEventListener('click', toggleSoundUI);
+
+            // Start / Next / Replay / Exit
+            document.getElementById('btn-start-game').addEventListener('click', startGame);
+            el.btnNextQuestion.addEventListener('click', nextTurn);
+            document.getElementById('btn-play-again').addEventListener('click', startGame);
+            document.getElementById('btn-back-lobby').addEventListener('click', returnToLobby);
+
+            // Custom Confirm Modal for Exit during Game
+            document.getElementById('btn-home-confirm').addEventListener('click', () => {
+                sound.playClick();
+                el.confirmModal.classList.remove('hidden');
+            });
+            document.getElementById('btn-cancel-exit').addEventListener('click', () => {
+                sound.playClick();
+                el.confirmModal.classList.add('hidden');
+            });
+            document.getElementById('btn-confirm-exit').addEventListener('click', returnToLobby);
+
+            // Keyboard Shortcuts (1-4 for options, Enter for Next)
+            window.addEventListener('keydown', (e) => {
+                if (gameState.phase !== 'playing') return;
+                if (gameState.isAnswering) {
+                    const keyMap = { '1': 0, '2': 1, '3': 2, '4': 3, 'a': 0, 'b': 1, 'c': 2, 'd': 3 };
+                    const idx = keyMap[e.key.toLowerCase()];
+                    if (idx !== undefined) handleAnswer(idx);
+                } else if (e.key === 'Enter' && !el.feedbackBox.classList.contains('hidden')) {
+                    nextTurn();
+                }
+            });
+        }
+
+        // Start 3D Scene & Animation Loop on Window Load
+        window.onload = function () {
+            try {
+                init3DScene();
+                setupEventListeners();
+                renderTeamInputs();
+                resizeConfetti();
+                animate3D();
+            } catch (err) {
+                console.error("Gagal memuat EcoRace 3D:", err);
+            }
+        };
+    </script>
+</body>
+</html>
